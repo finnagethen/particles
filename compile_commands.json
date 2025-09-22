@@ -1,0 +1,25 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-g",
+      "-O",
+      "-std=c2x",
+      "-Wextra",
+      "-Wall",
+      "-Wpedantic",
+      "-fsanitize=undefined",
+      "-fsanitize=address",
+      "-I.",
+      "-I./libs/sokol",
+      "-I./libs/cglm/include",
+      "-c",
+      "-o",
+      "src/main.o",
+      "src/main.c"
+    ],
+    "directory": "/home/finn/Dokumente/Programmieren/c/particle_system",
+    "file": "/home/finn/Dokumente/Programmieren/c/particle_system/src/main.c",
+    "output": "/home/finn/Dokumente/Programmieren/c/particle_system/src/main.o"
+  }
+]
