@@ -1,3 +1,3 @@
 # Particle System
 
-![](./screenshot1.png)
+![Preview](./assets/screenshot1.png)
