@@ -7,6 +7,7 @@ layout(binding=0) uniform vs_params {
 
 in vec3 pos;
 in vec3 inst_pos;
+in vec4 inst_color;
 
 out vec4 color;
 
@@ -19,7 +20,7 @@ void main() {
         + pos.y * cam_up;
 
     gl_Position = proj * view * model * vec4(world_pos, 1.0f);
-    color = vec4(1.0f);
+    color = inst_color;
 }
 @end
 

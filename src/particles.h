@@ -11,6 +11,10 @@ typedef struct particles {
     vec3s* positions;
     vec3s* velocities;
     float* lifetimes;
+
+    vec4s start_color;
+    vec4s end_color;
+    vec4s* colors;
 } particles_s;
 
 typedef struct particle_desc {
@@ -19,10 +23,11 @@ typedef struct particle_desc {
     float lifetime;
 } particle_desc_s;
 
-void particles_init(particles_s* p, size_t max_particles);
-void particles_deinit(particles_s* p);
-void particles_update(particles_s* p, float dt);
-void particles_add(particles_s* p, const particle_desc_s* desc);
+typedef struct particles_desc {
+    size_t max_particles;
+    vec4s start_color;
+    vec4s end_color;
+} particles_desc_s;
 
 
 typedef struct emitter emitter_s; // forward declaration
@@ -40,14 +45,16 @@ typedef struct emitter {
 
 typedef struct emitter_desc {
     float emission_rate;
-    size_t max_particles;
     emit_func emit;
+
+    const particles_desc_s* particles_desc;
 } emitter_desc_s;
 
 void emitter_init(emitter_s* e, const emitter_desc_s* desc);
 void emitter_deinit(emitter_s* e);
 void emitter_update(emitter_s* e, float dt);
 void emitter_emit(emitter_s* e, float dt);
+void emitter_add_particle(emitter_s* e, const particle_desc_s* desc);
 
 
 static const float quad_size = 0.05f;

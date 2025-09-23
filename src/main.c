@@ -18,8 +18,6 @@
 #include "instancing.glsl.h"
 
 
-#define MAX_PARTICLES 1024
-
 static struct {
     sg_pass_action pass_action;
     sg_pipeline pip;
@@ -36,14 +34,14 @@ static float frand_range(float min, float max) {
 static void emit_particle(emitter_s* e) {
     assert(e);
 
-    particles_add(&e->particles, &(particle_desc_s){
-        .position = (vec3s){ .x = 0.0f, .y = 0.0f, .z = 0.0f },
+    emitter_add_particle(e, &(particle_desc_s){
+        .position = (vec3s){ },
         .velocity = (vec3s){ 
             .x = frand_range(-0.5f, 0.5f), 
             .y = frand_range(1.0f, 3.0f), 
             .z = frand_range(-0.5f, 0.5f) 
         },
-        .lifetime = frand_range(1.0f, 3.0f)
+        .lifetime = frand_range(1.0f, 5.0f)
     });
 }
 
@@ -58,9 +56,13 @@ static void init(void) {
 
     // initialize the emitter
     emitter_init(&state.emitter, &(emitter_desc_s){
-        .emission_rate = 20.0f,
-        .max_particles = MAX_PARTICLES,
-        .emit = emit_particle
+        .emission_rate = 50.0f,
+        .emit = emit_particle, 
+        .particles_desc = &(particles_desc_s){
+            .max_particles = 1024,
+            .start_color = (vec4s){ .r = 1.0f, .g = 0.5f, .b = 0.0f, .a = 1.0f },
+            .end_color = (vec4s){ .r = 1.0f, .g = 0.0f, .b = 0.0f, .a = 0.0f }
+        }
     });
 
     // a pass action for the default render pass
@@ -84,11 +86,17 @@ static void init(void) {
         .label = "geometry-indices"
     });
 
-    // empty, dynamic instance-data vertex buffer, goes into vertex-buffer-slot 1
+    // empty, dynamic instance-data vertex buffer, goes into vertex-buffer-slot 1 and 2
     state.bind.vertex_buffers[1] = sg_make_buffer(&(sg_buffer_desc){
         .size = state.emitter.max_particles * sizeof(vec3s),
         .usage.stream_update = true,
-        .label = "instance-data"
+        .label = "instance-pos-data"
+    });
+
+    state.bind.vertex_buffers[2] = sg_make_buffer(&(sg_buffer_desc){
+        .size = state.emitter.max_particles * sizeof(vec4s),
+        .usage.stream_update = true,
+        .label = "instance-color-data"
     });
 
     // a shader
@@ -99,6 +107,7 @@ static void init(void) {
         // vertex buffer at slot 1 must step per instance
         .layout = {
             .buffers[1].step_func = SG_VERTEXSTEP_PER_INSTANCE,
+            .buffers[2].step_func = SG_VERTEXSTEP_PER_INSTANCE,
             .attrs = {
                 [ATTR_instancing_pos] = {
                     .format = SG_VERTEXFORMAT_FLOAT3,
@@ -107,6 +116,10 @@ static void init(void) {
                 [ATTR_instancing_inst_pos] = {
                     .format = SG_VERTEXFORMAT_FLOAT3,
                     .buffer_index = 1
+                }, 
+                [ATTR_instancing_inst_color] = {
+                    .format = SG_VERTEXFORMAT_FLOAT4,
+                    .buffer_index = 2
                 }
             }
         },
@@ -117,6 +130,13 @@ static void init(void) {
         .depth = {
             .compare = SG_COMPAREFUNC_LESS_EQUAL,
             .write_enabled = true,
+        },
+        .colors[0] = {
+            .blend = {
+                .enabled = true,
+                .src_factor_rgb = SG_BLENDFACTOR_SRC_ALPHA,
+                .dst_factor_rgb = SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+            }
         },
         .label = "instancing-pipeline"
     });
@@ -137,6 +157,11 @@ static void frame(void) {
             .ptr = state.emitter.particles.positions,
             .size = state.emitter.particles.num_particles * sizeof(vec3s)
         });
+
+        sg_update_buffer(state.bind.vertex_buffers[2], &(sg_range){
+            .ptr = state.emitter.particles.colors,
+            .size = state.emitter.particles.num_particles * sizeof(vec4s)
+        });
     }
 
     // model-view-projection matrix
@@ -145,8 +170,13 @@ static void frame(void) {
         sapp_widthf() / sapp_heightf(), 
         0.01f, 50.0f
     );
+    
+    // rotate the camera around the origin
+    const float radius = 5.0f;
+    const float cam_x = sinf(sapp_frame_count() * 0.05f) * radius;
+    const float cam_z = cosf(sapp_frame_count() * 0.05f) * radius;
     const mat4s view = glms_lookat(
-        (vec3s){ .x = 0.0f, .y = 1.5f, .z = 8.0f },
+        (vec3s){ .x = cam_x, .y = 1.5f, .z = cam_z },
         (vec3s){ .x = 0.0f, .y = 0.0f, .z = 0.0f },
         (vec3s){ .x = 0.0f, .y = 1.0f, .z = 0.0f }
     );
@@ -193,8 +223,7 @@ sapp_desc sokol_main(int argc, char *argv[]) {
         .width = 800,
         .height = 600,
         .sample_count = 4,
-        .window_title = "Instancing (sokol-app)",
-        .icon.sokol_default = true,
+        .window_title = "Particle System",
         .logger.func = slog_func,
     };
 }
