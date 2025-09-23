@@ -14,6 +14,8 @@
 #include "cglm/struct.h"
 
 #include "particles.h"
+#include "quad.h"
+#include "texture.h"
 
 #include "instancing.glsl.h"
 
@@ -99,19 +101,40 @@ static void init(void) {
         .label = "instance-color-data"
     });
 
+    // a texture for the particles
+    sg_image img = sg_make_image(&(sg_image_desc){
+        .width = TEXTURE_WIDTH,
+        .height = TEXTURE_HEIGHT,
+        .data.mip_levels[0] = SG_RANGE(texture),
+        .label = "particle-image"
+    });
+    state.bind.views[VIEW_tex] = sg_make_view(&(sg_view_desc){
+        .texture = { .image = img }, 
+        .label = "particle-texture-view"
+    });
+
+    // a sampler for the texture
+    state.bind.samplers[SMP_smp] = sg_make_sampler(&(sg_sampler_desc){
+        .label = "particle-sampler"
+    });
+
     // a shader
     sg_shader shd = sg_make_shader(instancing_shader_desc(sg_query_backend()));
 
     // a pipeline object
     state.pip = sg_make_pipeline(&(sg_pipeline_desc){
-        // vertex buffer at slot 1 must step per instance
+        // vertex buffer at slot 1 and 2 must step per instance
         .layout = {
-            .buffers[1].step_func = SG_VERTEXSTEP_PER_INSTANCE,
-            .buffers[2].step_func = SG_VERTEXSTEP_PER_INSTANCE,
             .attrs = {
                 [ATTR_instancing_pos] = {
                     .format = SG_VERTEXFORMAT_FLOAT3,
-                    .buffer_index = 0
+                    .buffer_index = 0, 
+                    .offset = offsetof(vertex_s, pos)
+                },
+                [ATTR_instancing_uv0] = {
+                    .format = SG_VERTEXFORMAT_FLOAT2,
+                    .buffer_index = 0, 
+                    .offset = offsetof(vertex_s, uv)
                 },
                 [ATTR_instancing_inst_pos] = {
                     .format = SG_VERTEXFORMAT_FLOAT3,
@@ -121,7 +144,10 @@ static void init(void) {
                     .format = SG_VERTEXFORMAT_FLOAT4,
                     .buffer_index = 2
                 }
-            }
+            },
+            .buffers[0].stride = sizeof(vertex_s), 
+            .buffers[1].step_func = SG_VERTEXSTEP_PER_INSTANCE,
+            .buffers[2].step_func = SG_VERTEXSTEP_PER_INSTANCE,
         },
         .shader = shd,
         .index_type = SG_INDEXTYPE_UINT16,
@@ -129,13 +155,13 @@ static void init(void) {
         .face_winding = SG_FACEWINDING_CCW,
         .depth = {
             .compare = SG_COMPAREFUNC_LESS_EQUAL,
-            .write_enabled = true,
+            .write_enabled = false,
         },
         .colors[0] = {
             .blend = {
                 .enabled = true,
                 .src_factor_rgb = SG_BLENDFACTOR_SRC_ALPHA,
-                .dst_factor_rgb = SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+                .dst_factor_rgb = SG_BLENDFACTOR_ONE,
             }
         },
         .label = "instancing-pipeline"

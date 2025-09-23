@@ -55,18 +55,3 @@ void emitter_deinit(emitter_s* e);
 void emitter_update(emitter_s* e, float dt);
 void emitter_emit(emitter_s* e, float dt);
 void emitter_add_particle(emitter_s* e, const particle_desc_s* desc);
-
-
-static const float quad_size = 0.05f;
-static const float quad_vertices[] = {
-    // x, y, z
-    -quad_size, -quad_size, 0.0f,  // bottom-left
-     quad_size, -quad_size, 0.0f,  // bottom-right
-     quad_size,  quad_size, 0.0f,  // top-right
-    -quad_size,  quad_size, 0.0f   // top-left
-};
-
-static const uint16_t quad_indices[] = {
-    0, 1, 2, // first triangle
-    0, 2, 3  // second triangle
-}; 
