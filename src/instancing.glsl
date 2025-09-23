@@ -1,18 +1,25 @@
 @vs vs
 layout(binding=0) uniform vs_params {
-    mat4 mvp;
+    mat4 model;
+    mat4 view;
+    mat4 proj;
 };
 
 in vec3 pos;
-in vec4 color0;
 in vec3 inst_pos;
 
 out vec4 color;
 
 void main() {
-    vec4 pos = vec4(pos + inst_pos, 1.0);
-    gl_Position = mvp * pos;
-    color = color0;
+    vec3 cam_right = vec3(view[0][0], view[1][0], view[2][0]);
+    vec3 cam_up = vec3(view[0][1], view[1][1], view[2][1]);
+
+    vec3 world_pos = inst_pos 
+        + pos.x * cam_right 
+        + pos.y * cam_up;
+
+    gl_Position = proj * view * model * vec4(world_pos, 1.0f);
+    color = vec4(1.0f);
 }
 @end
 
