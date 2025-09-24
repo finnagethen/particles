@@ -1,7 +1,15 @@
+/*
+ * A simple particle system using instanced rendering.
+ *
+ * Spawns particles in a fixed time interval. If SPACE is pressed, a batch of
+ * particles is emitted.
+ *
+ */
+
+
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
-#include <assert.h>
 
 #define SOKOL_IMPL
 #define SOKOL_GLCORE
@@ -34,8 +42,6 @@ static float frand_range(float min, float max) {
 }
 
 static void emit_particle(emitter_s* e) {
-    assert(e);
-
     emitter_add_particle(e, &(particle_desc_s){
         .position = (vec3s){ },
         .velocity = (vec3s){ 
@@ -71,7 +77,7 @@ static void init(void) {
     state.pass_action = (sg_pass_action){
         .colors[0] = {
             .load_action = SG_LOADACTION_CLEAR,
-            .clear_value = { 0.5f, 0.5f, 0.5f, 1.0f }
+            .clear_value = { 0.0f, 0.0f, 0.0f, 1.0f }
         }
     };
 
@@ -176,7 +182,7 @@ static void frame(void) {
     const float dt = (float)(sapp_frame_duration());
 
     // emit new particles
-    emitter_emit(&state.emitter, dt);
+    emitter_emit_timed(&state.emitter, dt);
 
     // update emitter (which updates the particles)
     emitter_update(&state.emitter, dt);
@@ -236,8 +242,15 @@ static void cleanup(void) {
 
 static void event(const sapp_event *e) {
     if (e->type == SAPP_EVENTTYPE_KEY_DOWN) {
-        if (e->key_code == SAPP_KEYCODE_ESCAPE) {
-            sapp_request_quit();
+        switch (e->key_code) {
+            case SAPP_KEYCODE_ESCAPE:
+                sapp_request_quit();
+                break;
+            case SAPP_KEYCODE_SPACE:
+                emitter_emit_batch(&state.emitter, 100);
+                break;
+            default:
+                break;
         }
     }
 }

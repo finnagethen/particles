@@ -4,8 +4,17 @@
 #include <assert.h>
 
 
+/*
+ * @brief Allocates the necessary memory
+ *
+ * @param p Pointer to the particles structure to initialize
+ * @param desc Pointer to the particles description structure
+ *
+ * @note The caller is responsible for calling particles_deinit()
+ */
 static void particles_init(particles_s* p, const particles_desc_s* desc) {
     assert(p && desc);
+    assert(desc->max_particles > 0);
     
     *p = (particles_s){
         .num_particles = 0,
@@ -25,6 +34,11 @@ static void particles_init(particles_s* p, const particles_desc_s* desc) {
     );
 }
 
+/*
+ * @brief Frees allocated memory and resets the structure
+ *
+ * @param p Pointer to the particles structure to deinitialize
+ */
 static void particles_deinit(particles_s* p) {
     if (p) {
         free(p->positions);
@@ -35,6 +49,12 @@ static void particles_deinit(particles_s* p) {
     }
 }
 
+/*
+ * @brief Updates particle positions, lifetimes, and colors
+ *
+ * @param p Pointer to the particles structure to update
+ * @param dt Time delta in seconds
+ */
 static void particles_update(particles_s* p, float dt) {
     assert(p && dt >= 0.0f);
     
@@ -69,6 +89,14 @@ static void particles_update(particles_s* p, float dt) {
     }
 }
 
+/*
+ * @brief Adds a new particle to the particles structure
+ *
+ * @param p Pointer to the particles structure
+ * @param desc Pointer to the particle description structure
+ *
+ * @note The caller must ensure there is enough capacity
+ */
 static void particles_add(particles_s* p, const particle_desc_s* desc) {
     assert(p && desc);
     
@@ -79,8 +107,19 @@ static void particles_add(particles_s* p, const particle_desc_s* desc) {
     p->colors[idx] = p->start_color;
 }
 
+/*
+ * @desc Initializes an emitter with the given description
+ *
+ * @param e Pointer to the emitter structure to initialize
+ * @param desc Pointer to the emitter description structure
+ *
+ * @note The caller is responsible for calling emitter_deinit()
+ */
 void emitter_init(emitter_s* e, const emitter_desc_s* desc) {
     assert(e && desc);
+    assert(desc->emission_rate >= 0.0f);
+    assert(desc->emit);
+    assert(desc->particles_desc);
     
     *e = (emitter_s){
         .emission_rate = desc->emission_rate,
@@ -91,6 +130,11 @@ void emitter_init(emitter_s* e, const emitter_desc_s* desc) {
     particles_init(&e->particles, desc->particles_desc);
 }
 
+/*
+ * @brief Deinitializes the emitter and frees allocated memory
+ *
+ * @param e Pointer to the emitter structure to deinitialize
+ */
 void emitter_deinit(emitter_s* e) {
     if (e) {
         particles_deinit(&e->particles);
@@ -98,13 +142,25 @@ void emitter_deinit(emitter_s* e) {
     }
 }
 
+/*
+ * @brief Updates the emitter's particles
+ *
+ * @param e Pointer to the emitter structure to update
+ * @param dt Time delta in seconds
+ */
 void emitter_update(emitter_s* e, float dt) {
     assert(e && dt >= 0.0f);
 
     particles_update(&e->particles, dt);
 }
 
-void emitter_emit(emitter_s* e, float dt) {
+/*
+ * @brief Emits particles based on the emission rate and time delta
+ *
+ * @param e Pointer to the emitter structure
+ * @param dt Time delta in seconds
+ */
+void emitter_emit_timed(emitter_s* e, float dt) {
     assert(e && e->emit && dt >= 0.0f);
     
     e->emission_accum += e->emission_rate * dt;
@@ -116,7 +172,34 @@ void emitter_emit(emitter_s* e, float dt) {
     }
 }
 
-void emitter_add_particle(emitter_s* e, const particle_desc_s* desc) {
+/* @brief Emits a fixed number of particles immediately
+ *
+ * @param e Pointer to the emitter structure
+ * @param size Number of particles to emit
+ */
+void emitter_emit_batch(emitter_s* e, size_t size) {
+    assert(e && e->emit);
+    
+    for (size_t i = 0; i < size && e->particles.num_particles < e->max_particles; i++) {
+        e->emit(e);
+    }
+}
+
+/*
+ * @brief Adds a single particle to the emitter
+ *
+ * @param e Pointer to the emitter structure
+ * @param desc Pointer to the particle description structure
+ *
+ * @returns true if the particle was added, false if the emitter is at capacity
+ */
+bool emitter_add_particle(emitter_s* e, const particle_desc_s* desc) {
     assert(e && desc);
+    
+    if (e->particles.num_particles >= e->max_particles) {
+        return false;
+    }
+
     particles_add(&e->particles, desc);
+    return true;
 }

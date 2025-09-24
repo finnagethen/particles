@@ -53,5 +53,6 @@ typedef struct emitter_desc {
 void emitter_init(emitter_s* e, const emitter_desc_s* desc);
 void emitter_deinit(emitter_s* e);
 void emitter_update(emitter_s* e, float dt);
-void emitter_emit(emitter_s* e, float dt);
-void emitter_add_particle(emitter_s* e, const particle_desc_s* desc);
+void emitter_emit_timed(emitter_s* e, float dt);
+void emitter_emit_batch(emitter_s* e, size_t size);
+bool emitter_add_particle(emitter_s* e, const particle_desc_s* desc);
