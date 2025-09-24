@@ -71,7 +71,7 @@ static void init(void) {
     state.pass_action = (sg_pass_action){
         .colors[0] = {
             .load_action = SG_LOADACTION_CLEAR,
-            .clear_value = { 0.0f, 0.0f, 0.0f, 1.0f }
+            .clear_value = { 0.5f, 0.5f, 0.5f, 1.0f }
         }
     };
 
@@ -161,7 +161,11 @@ static void init(void) {
             .blend = {
                 .enabled = true,
                 .src_factor_rgb = SG_BLENDFACTOR_SRC_ALPHA,
-                .dst_factor_rgb = SG_BLENDFACTOR_ONE,
+                .dst_factor_rgb = SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+                .src_factor_alpha = SG_BLENDFACTOR_ONE,
+                .dst_factor_alpha = SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+                .op_rgb = SG_BLENDOP_ADD,
+                .op_alpha = SG_BLENDOP_ADD,
             }
         },
         .label = "instancing-pipeline"
